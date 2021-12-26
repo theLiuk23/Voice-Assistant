@@ -1,0 +1,15 @@
+ciao/Answers
+stai/Answers
+bene/Answers
+ore/Answers
+v*********/Answers
+inculo/Answers
+-------------------
+riproduci/SearchMusic
+youtube/ChangeMusicPlatform
+spotify/ChangeMusicPlatform
+musicale/ChangeMusicPlatform
+notizie/ReadNews
+notizia/ReadNews
+ricordami/SetTask
+stop/Stop
