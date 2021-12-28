@@ -13,3 +13,6 @@ notizie/ReadNews
 notizia/ReadNews
 ricordami/SetTask
 stop/Stop
+randomico/RandomNumber
+caso/RandomNumber
+casuale

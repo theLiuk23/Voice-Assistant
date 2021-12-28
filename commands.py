@@ -8,6 +8,7 @@ import threading
 import playsound
 import webbrowser
 import datetime
+import random
 import pywhatkit
 import spotipy
 import time
@@ -15,7 +16,7 @@ import sys
 import re
 
 
-# classes called by the programme
+### classes called by the programme ###
 
 class Start(object):
     def Main(self):
@@ -50,15 +51,23 @@ class SaveTxt(object):
         self.music_platform = self.config['settings']['music_platform']
         for i in range(len(settings_list)):
             self.config.set(partition, settings_list[i - 1], new_value[i - 1])
+        self.save()
         
+    def save(self):
         try:
-            # finally saves
             with open('config.ini', 'w') as file:
                 self.config.write(file)
         except Exception as e:
             print(e)
             Speak.speak('Non sono riuscita a salvare le nuove impostazioni.')
             return
+
+    def add_partition(self, partition):
+        if type(partition) is not str:
+            raise Exception('Partition must be a string.')
+        self.config.read('config.ini')
+        self.config.add_section(partition)
+        self.save()
 
 
 class DeleteTxt(object):
@@ -68,10 +77,25 @@ class DeleteTxt(object):
             raise Exception('Content must be a string.')
         self.config.read('config.ini')
         self.config.remove_option(partition, content)
+        self.save()
+
+    def save(self):
+        try:
+            with open('config.ini', 'w') as file:
+                self.config.write(file)
+        except Exception as e:
+            print(e)
+            Speak.speak('Non sono riuscita a salvare le nuove impostazioni.')
+            return
+        if self.config.has_section('timers') == False:
+            self.config.add_section('timers')
+            with open('config.ini', 'w') as file:
+                self.config.write(file)
 
     def partition(self, partition):
         self.config.read('config.ini')
-        self.config.remove_section(partition)
+        success = self.config.remove_section(partition)
+        self.save()
 
 
 class ReadTxt(object):
@@ -95,7 +119,7 @@ class ReadTxt(object):
         return timer
 
 
-# classes callable from the users
+### classes callable from the users ###
 
 
 class SearchMusic(object):
@@ -180,25 +204,20 @@ class ReadNews(object):
         for word in command.split(' '):
             if numbers.__contains__(word):
                 return numbers[word]
-
         try:
             return int(re.search(r'\d+', command).group())
         except:
             return 5
 
     def Main(self, command):
-        
         num = self.get_num(command)
         index = 1
-
         if num == 1:
             Speak.speak(f'Ecco la prima notizia da {self.fonte}')
         else:
             Speak.speak(f'Ecco le prime {num} notizie da {self.fonte}')
-            
         gn = GoogleNews(lang='it', country='IT')
         top = gn.top_news()
-
         for item in top['entries'][:num]:
             title = item['title'].split('-')[0] #removes the source from the end of the string
             Speak.speak(f'{index}, {title}')
@@ -210,6 +229,7 @@ class SetTask(object):
     orario = None
     memo = None
     timer_minutes = None
+    day = None
 
     def ask_date(self, attempts):
         rec = sr.Recognizer()
@@ -259,6 +279,7 @@ class SetTask(object):
     def set_task(self, day):
         today = datetime.datetime.today().weekday()
         remaining_days = int(day) - today
+        self.day = day
         time = self.orario
         if time is None or today is None:
             raise Exception('Time or Date not provided. They are required.')
@@ -268,14 +289,15 @@ class SetTask(object):
         timer_minutes = int(time[0]) * 60 + int(time[1]) + 1440 * int(remaining_days) - int(todays_minutes)
         if timer_minutes <= 0:
             DeleteTxt().partition('timers')
+            SaveTxt().add_partition('timers')
         Speak.speak(f'Bene! Il timer si attiverà tra {timer_minutes} minuti')
-        thread = threading.Thread(target=self.start_timer)
+        thread = threading.Thread(target=self.start_timer, args=(self.memo, self.orario, self.day))
         thread.start()
 
     def start_timer(self):
         time.sleep(int(self.timer) * 60)
         Speak.speak(f'Hey, ricordati di {self.memo}. Mi raccomando!')
-        sound_file_location = str(Path(__file__).parent) + '/DieForYou.mp3'
+        sound_file_location = str(Path(__file__).parent) + '\DieForYou.mp3'
         print(f'SOUND PATH: {sound_file_location}')
         DeleteTxt().partition('timers')
         playsound.playsound(sound_file_location)
@@ -287,11 +309,12 @@ class SetTask(object):
         timer_minutes = int(float(timer[0])) * 60 + int(float(timer[1])) + 1440 * int(remaining_days) - int(float(todays_minutes))
         if timer_minutes <= 0 or timer_minutes > 1440 * 7:
             DeleteTxt().partition('timers')
-        time.sleep(int(timer_minutes) * 60)
+            return
+        time.sleep(timer_minutes * 60)
         Speak.speak(f'Hey, ricordati di {memo}. Mi raccomando!')
-        sound_file_location = str(Path(__file__).parent) + '/DieForYou.mp3'
+        sound_file_location = str(Path(__file__).parent) + '\DieForYou.mp3'
         print(f'SOUND PATH: {sound_file_location}')
-        DeleteTxt().partition('timers', [])
+        DeleteTxt().partition('timers')
         playsound.playsound(sound_file_location)
         # sound doesn't work (?)
 
@@ -308,3 +331,35 @@ class Stop(object):
         sys.exit(0)
 
 
+class RandomNumber(object):
+    random_range = []
+    min = None
+    max = None
+
+    def Main(self, command):
+        if not command.__contains__('numero a caso') and not command.__contains__('random') and not command.__contains__('randomico'):
+            raise Exception('Il comando era impreciso o errato.')
+        
+        self.random_range = self.get_num_list(command)
+        if self.random_range is []:
+            raise Exception('You specified more than 2 numbers.')
+        if self.random_range is None:
+            self.min = 0
+            self.max = 10
+        else:
+            self.random_range.sort()
+            self.min = self.random_range[0]
+            self.max = self.random_range[1]
+        number = int(random.randrange(self.min, self.max))
+        Speak.speak('Il numero magico è...')
+        time.sleep(1)
+        Speak.speak(str(number))
+
+
+    def get_num_list(self, command):
+        int_list = list(map(int, re.findall(r'\d+', command)))
+        if len(int_list) == 0:
+            return None
+        if len(int_list) > 2:
+            return []
+        return int_list

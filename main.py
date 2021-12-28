@@ -12,7 +12,7 @@ engine = pyttsx3.init()
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[0].id)
 engine.setProperty('rate', 210)
-commands.Start().Main()
+timer_thread = threading.Thread(target=commands.Start().Main)
 
 
 # variables
@@ -83,6 +83,7 @@ def RunCommand(command):
 # main method - listening and running RunCommand(command)
 def Listening():
     print('Sono pronto per aiutarti!')
+    timer_thread.run()
     while True:
         with sr.Microphone() as mic:
             try:
