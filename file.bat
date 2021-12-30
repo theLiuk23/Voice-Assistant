@@ -1,3 +1,3 @@
 @echo off
-python f:\Codewars\Python\voice_assistant\main.py %*
+python f:\Voice_Assistant\main.py %*
 pause
