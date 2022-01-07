@@ -16,3 +16,4 @@ stop/Stop
 randomico/RandomNumber
 caso/RandomNumber
 casuale/RandomNumber
+chiudi/CloseProgramme

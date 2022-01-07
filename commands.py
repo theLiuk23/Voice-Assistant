@@ -363,3 +363,11 @@ class RandomNumber(object):
         if len(int_list) > 2:
             return []
         return int_list
+
+
+class CloseProgramme(object):
+    def Main(self, command):
+        import main
+        main.sys.exit(0)
+        sys.exit(0)
+
